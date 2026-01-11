@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>DialogsDemo</class>
+ <widget class="QWidget" name="DialogsDemo">
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <layout class="QFormLayout" name="colorLayout">
+     <item row="0" column="0">
+      <widget class="QPushButton" name="color_button">
+       <property name="text">
+        <string>Choose Color</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QLabel" name="color_label">
+       <property name="text">
+        <string>Selected color will appear here</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QFormLayout" name="fontLayout">
+     <item row="0" column="0">
+      <widget class="QPushButton" name="font_button">
+       <property name="text">
+        <string>Choose Font</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QLabel" name="font_label">
+       <property name="text">
+        <string>Sample text with selected font</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QFormLayout" name="inputLayout">
+     <item row="0" column="0">
+      <widget class="QLabel" name="textInputLabel">
+       <property name="text">
+        <string>Text Input:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QPushButton" name="text_input_btn">
+       <property name="text">
+        <string>Text Input</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="intInputLabel">
+       <property name="text">
+        <string>Integer Input:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QPushButton" name="int_input_btn">
+       <property name="text">
+        <string>Integer Input</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="doubleInputLabel">
+       <property name="text">
+        <string>Double Input:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QPushButton" name="double_input_btn">
+       <property name="text">
+        <string>Double Input</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="itemInputLabel">
+       <property name="text">
+        <string>Item Selection:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QPushButton" name="item_input_btn">
+       <property name="text">
+        <string>Item Selection</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QFormLayout" name="msgLayout">
+     <item row="0" column="0">
+      <widget class="QLabel" name="infoLabel">
+       <property name="text">
+        <string>Info:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QPushButton" name="info_btn">
+       <property name="text">
+        <string>Info Message</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="warningLabel">
+       <property name="text">
+        <string>Warning:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QPushButton" name="warning_btn">
+       <property name="text">
+        <string>Warning Message</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="questionLabel">
+       <property name="text">
+        <string>Question:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QPushButton" name="question_btn">
+       <property name="text">
+        <string>Question Message</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
+

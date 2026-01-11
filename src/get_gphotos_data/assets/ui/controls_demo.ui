@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ControlsDemo</class>
+ <widget class="QWidget" name="ControlsDemo">
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QGroupBox" name="numericGroup">
+     <property name="title">
+      <string>Numeric Controls</string>
+     </property>
+     <layout class="QFormLayout" name="numericLayout">
+      <item row="0" column="0">
+       <widget class="QLabel" name="spinBoxLabel">
+        <property name="text">
+         <string>Integer SpinBox:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QSpinBox" name="spin_box">
+        <property name="minimum">
+         <number>0</number>
+        </property>
+        <property name="maximum">
+         <number>100</number>
+        </property>
+        <property name="value">
+         <number>42</number>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="doubleSpinLabel">
+        <property name="text">
+         <string>Double SpinBox:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QDoubleSpinBox" name="double_spin">
+        <property name="decimals">
+         <number>2</number>
+        </property>
+        <property name="minimum">
+         <double>0.000000000000000</double>
+        </property>
+        <property name="maximum">
+         <double>100.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>0.500000000000000</double>
+        </property>
+        <property name="value">
+         <double>3.140000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="sliderLabel">
+        <property name="text">
+         <string>Slider:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QSlider" name="slider">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="minimum">
+         <number>0</number>
+        </property>
+        <property name="maximum">
+         <number>100</number>
+        </property>
+        <property name="value">
+         <number>50</number>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="datetimeGroup">
+     <property name="title">
+      <string>Date &amp; Time Controls</string>
+     </property>
+     <layout class="QFormLayout" name="datetimeLayout">
+      <item row="0" column="0">
+       <widget class="QLabel" name="dateLabel">
+        <property name="text">
+         <string>Date:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QDateEdit" name="date_edit">
+        <property name="calendarPopup">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="timeLabel">
+        <property name="text">
+         <string>Time:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QTimeEdit" name="time_edit"/>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="datetimeLabel">
+        <property name="text">
+         <string>Date &amp; Time:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QDateTimeEdit" name="datetime_edit">
+        <property name="calendarPopup">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="selectionGroup">
+     <property name="title">
+      <string>Selection Controls</string>
+     </property>
+     <layout class="QFormLayout" name="selectionLayout">
+      <item row="0" column="0">
+       <widget class="QLabel" name="comboBoxLabel">
+        <property name="text">
+         <string>ComboBox:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QComboBox" name="combo_box"/>
+      </item>
+      <item row="1" column="1">
+       <widget class="QCheckBox" name="checkbox1">
+        <property name="text">
+         <string>Checkbox 1</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QCheckBox" name="checkbox2">
+        <property name="text">
+         <string>Checkbox 2</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="radioLabel">
+        <property name="text">
+         <string>Radio Buttons:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QWidget" name="radioGroupWidget" native="true">
+        <layout class="QVBoxLayout" name="radioLayout">
+         <item>
+          <widget class="QRadioButton" name="radio1">
+           <property name="text">
+            <string>Radio Option 1</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="radio2">
+           <property name="text">
+            <string>Radio Option 2</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="value_label">
+     <property name="text">
+      <string>Values will appear here</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
+
