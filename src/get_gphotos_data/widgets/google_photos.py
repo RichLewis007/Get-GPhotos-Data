@@ -221,7 +221,7 @@ class GooglePhotosView(QWidget):
                     "2. The OAuth scope was not granted during authentication\n"
                     "   → Try re-authenticating and make sure to grant all permissions\n"
                     "3. The scope is not added to your OAuth consent screen\n"
-                    "   → Add 'https://www.googleapis.com/auth/photoslibrary.readonly' to scopes"
+                    "   → Add 'https://www.googleapis.com/auth/photoslibrary.readonly.appcreateddata' to scopes"
                 )
             QMessageBox.critical(self, "Error", error_msg)
         finally:

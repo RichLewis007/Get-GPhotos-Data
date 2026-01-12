@@ -62,7 +62,7 @@ To use this application, you need to set up OAuth 2.0 credentials with Google. F
 3. If prompted, configure the OAuth consent screen:
    - Choose "Desktop" or "External" (unless you have a Google Workspace)
    - Fill in the required fields (App name, User support email, Developer contact)
-   - Add scopes: `https://www.googleapis.com/auth/photoslibrary.readonly`
+   - Add scopes: `https://www.googleapis.com/auth/photoslibrary.readonly.appcreateddata`
    - Add test users if needed (for external apps in testing mode)
 4. Create OAuth client ID:
    - Application type: **Desktop app**
@@ -215,7 +215,7 @@ If you get a `403 Client Error: Forbidden` when trying to refresh data, see the 
 **Quick fixes:**
 
 1. **Enable the API**: Make sure "Google Photos Library API" is enabled in Google Cloud Console (APIs & Services > Library)
-2. **Add scope to consent screen**: Add `https://www.googleapis.com/auth/photoslibrary.readonly` to your OAuth consent screen scopes
+2. **Add scope to consent screen**: Add `https://www.googleapis.com/auth/photoslibrary.readonly.appcreateddata` to your OAuth consent screen scopes
 3. **Re-authenticate**: Delete the token file and re-authenticate after making changes
 
 See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for complete troubleshooting steps.
