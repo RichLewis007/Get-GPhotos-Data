@@ -119,6 +119,7 @@
         margin: 20px 0;
         font-family: "Courier New", monospace;
         font-size: 0.9em;
+        white-space: pre-wrap;
       }
 
       .code-block code {
@@ -379,19 +380,25 @@
           <h2>Project Structure</h2>
           <div class="code-block">
             <code
-              >get-gphotos-data/ ├── src/get_gphotos_data/ │ ├── photos/
-              <span class="comment"># Google Photos API integration</span> │ │
-              ├── auth.py
-              <span class="comment"># OAuth 2.0 authentication</span> │ │ └──
-              client.py
-              <span class="comment"># REST API client using requests</span> │
-              ├── widgets/ │ │ └── google_photos.py
-              <span class="comment"># Google Photos viewer widget</span> │ └──
-              assets/ui/ │ └── google_photos_view.ui
-              <span class="comment"># Qt Designer UI file</span> ├──
-              API_REFERENCE.md
-              <span class="comment"># Complete API documentation</span> └──
-              README.md <span class="comment"># Full documentation</span></code
+              >get-gphotos-data/<br />
+              ├── src/get_gphotos_data/<br />
+              │ ├── photos/
+              <span class="comment"># Google Photos API integration</span><br />
+              │ │ ├── auth.py
+              <span class="comment"># OAuth 2.0 authentication</span><br />
+              │ │ └── client.py
+              <span class="comment"># REST API client using requests</span
+              ><br />
+              │ ├── widgets/<br />
+              │ │ └── google_photos.py
+              <span class="comment"># Google Photos viewer widget</span><br />
+              │ └── assets/ui/<br />
+              │ └── google_photos_view.ui
+              <span class="comment"># Qt Designer UI file</span><br />
+              ├── API_REFERENCE.md
+              <span class="comment"># Complete API documentation</span><br />
+              └── README.md
+              <span class="comment"># Full documentation</span></code
             >
           </div>
         </section>

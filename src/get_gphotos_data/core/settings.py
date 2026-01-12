@@ -28,6 +28,7 @@ class SettingsKeys:
     window_geometry: str = "window/geometry"
     window_state: str = "window/state"
     splash_screen_seconds: str = "ui/splash_screen_seconds"
+    debug_api: str = "debug/api_logging"
 
 
 class Settings:
@@ -179,3 +180,27 @@ class Settings:
         # Ensure reasonable bounds
         clamped = max(1, min(100, max_files))
         self._qs.setValue(self.keys.max_recent_files, clamped)
+
+    def get_debug_api(self) -> bool:
+        """Get API debug logging setting.
+
+        Returns:
+            True if API debug logging is enabled (default: True).
+        """
+        value = self._qs.value(self.keys.debug_api)
+        if value is None:
+            return True  # Default to enabled
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (int, str)):
+            # Support both 1/0 and "true"/"false"
+            return str(value).lower() in ("1", "true", "yes")
+        return True
+
+    def set_debug_api(self, enabled: bool) -> None:
+        """Set API debug logging setting.
+
+        Args:
+            enabled: Whether to enable API debug logging.
+        """
+        self._qs.setValue(self.keys.debug_api, enabled)

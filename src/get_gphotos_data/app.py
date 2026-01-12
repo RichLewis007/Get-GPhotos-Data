@@ -43,7 +43,11 @@ def run(splash_screen_seconds: int | None = None, force_no_splash: bool = False)
     app.setOrganizationName(APP_ORG)
     app.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps, True)
 
-    setup_logging()
+    # Load settings early to check debug flag
+    settings = Settings()
+    debug_api = settings.get_debug_api()
+
+    setup_logging(enable_console=debug_api)
     # Install exception hook with explicit dialog factory to avoid circular dependency
     # This allows core/exceptions to not import dialogs at module level
     from .dialogs.error_dialog import ErrorDialog
@@ -61,8 +65,6 @@ def run(splash_screen_seconds: int | None = None, force_no_splash: bool = False)
         guard.send_message_to_existing_instance()
         log.info("Another instance detected, exiting")
         return 0
-
-    settings = Settings()
 
     # Load packaged assets via importlib.resources so this works from wheels.
     # Apply theme from settings

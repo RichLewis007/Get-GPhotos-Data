@@ -53,6 +53,9 @@
        <property name="text">
         <string>Authenticate</string>
        </property>
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
       </widget>
      </item>
      <item>

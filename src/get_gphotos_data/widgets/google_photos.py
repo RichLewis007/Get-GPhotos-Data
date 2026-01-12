@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QLabel,
     QMessageBox,
+    QProgressDialog,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
@@ -25,7 +26,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from ..core.paths import app_executable_dir
 from ..core.ui_loader import load_ui
+from ..core.workers import WorkContext, WorkRequest, Worker, WorkerPool
 from ..photos.auth import GooglePhotosAuth
 from ..photos.client import GooglePhotosClient
 
@@ -36,9 +39,16 @@ class GooglePhotosView(QWidget):
     # Signal emitted when authentication status changes
     authenticated_changed = Signal(bool)
 
-    def __init__(self, parent=None) -> None:
+    def __init__(self, parent=None, debug_api: bool = False) -> None:
+        """Initialize the Google Photos viewer widget.
+
+        Args:
+            parent: Parent widget
+            debug_api: If True, enable detailed API logging to console
+        """
         super().__init__(parent)
         self.log = logging.getLogger(__name__)
+        self.debug_api = debug_api
         
         # Load UI from .ui file
         ui_widget = load_ui("google_photos_view.ui", self)
@@ -110,8 +120,17 @@ class GooglePhotosView(QWidget):
         self.media_items: list[dict[str, Any]] = []
         self.albums: list[dict[str, Any]] = []
         self.shared_albums: list[dict[str, Any]] = []
+        self.pool = WorkerPool()
+        self.active_worker: Worker[tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]] | None = None
 
+        # Disable authenticate button by default
+        self.authenticate_button.setEnabled(False)
+        
         self._update_ui_state(False)
+
+        # Try to load credentials.json from program's directory
+        # This will enable the authenticate button if credentials.json is not found
+        self._try_load_credentials()
 
     def set_credentials_path(self, credentials_path: Path | str) -> None:
         """Set the path to the OAuth credentials file.
@@ -124,7 +143,7 @@ class GooglePhotosView(QWidget):
         if self.auth.is_authenticated():
             try:
                 credentials = self.auth.authenticate()
-                self.client = GooglePhotosClient(credentials)
+                self.client = GooglePhotosClient(credentials, debug=self.debug_api)
                 self._update_ui_state(True)
             except Exception as e:
                 self.log.warning("Failed to initialize authenticated client: %s", e)
@@ -139,15 +158,37 @@ class GooglePhotosView(QWidget):
         if authenticated:
             self.auth_status_label.setText("Authenticated")
             self.authenticate_button.setText("Re-authenticate")
+            self.authenticate_button.setEnabled(True)
             self.refresh_button.setEnabled(True)
         else:
             self.auth_status_label.setText("Not authenticated")
             self.authenticate_button.setText("Authenticate")
+            # Don't disable authenticate button here - let _try_load_credentials handle it
             self.refresh_button.setEnabled(False)
             # Clear data
             self._clear_all_tables()
 
         self.authenticated_changed.emit(authenticated)
+
+    def _try_load_credentials(self) -> None:
+        """Try to load credentials.json from the program's directory.
+        
+        If credentials.json is found, attempts to load and authenticate.
+        If not found or authentication fails, enables the authenticate button.
+        """
+        app_dir = app_executable_dir()
+        credentials_path = app_dir / "credentials.json"
+        
+        if credentials_path.exists():
+            self.log.info("Found credentials.json in program directory: %s", credentials_path)
+            self.set_credentials_path(credentials_path)
+            # If authentication didn't succeed, ensure button is enabled
+            if self.client is None:
+                self.authenticate_button.setEnabled(True)
+        else:
+            self.log.info("credentials.json not found in program directory: %s", app_dir)
+            # Enable authenticate button if credentials file not found
+            self.authenticate_button.setEnabled(True)
 
     def on_authenticate(self) -> None:
         """Handle authenticate button click."""
@@ -165,7 +206,7 @@ class GooglePhotosView(QWidget):
 
         try:
             credentials = self.auth.authenticate()
-            self.client = GooglePhotosClient(credentials)
+            self.client = GooglePhotosClient(credentials, debug=self.debug_api)
             self._update_ui_state(True)
             QMessageBox.information(self, "Authentication", "Successfully authenticated with Google Photos!")
             # Automatically refresh data after authentication
@@ -177,40 +218,107 @@ class GooglePhotosView(QWidget):
             QMessageBox.critical(self, "Authentication Error", f"Failed to authenticate:\n{e}")
 
     def on_refresh_data(self) -> None:
-        """Refresh all data from Google Photos API."""
+        """Refresh data from Google Photos API using a background worker.
+        
+        Fetches a single page of data for quick testing.
+        """
         if not self.client:
             QMessageBox.warning(self, "Not Authenticated", "Please authenticate first.")
             return
 
-        try:
-            # Show progress
-            self.refresh_button.setEnabled(False)
-            self.refresh_button.setText("Loading...")
+        if self.active_worker is not None:
+            QMessageBox.information(self, "Loading", "Data is already being loaded. Please wait.")
+            return
 
-            # Fetch media items
-            self.log.info("Fetching media items...")
-            self.media_items = self.client.get_all_media_items()
+        # Create progress dialog
+        progress_dialog = QProgressDialog("Loading data from Google Photos...", "Cancel", 0, 100, self)
+        progress_dialog.setWindowTitle("Loading Google Photos Data")
+        progress_dialog.setWindowModality(Qt.WindowModality.WindowModal)
+        progress_dialog.setMinimumDuration(0)  # Show immediately
+        progress_dialog.setValue(0)
+
+        # Show progress
+        self.refresh_button.setEnabled(False)
+        self.refresh_button.setText("Loading...")
+
+        def work(ctx: WorkContext) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+            """Background work function - runs in worker thread.
+            
+            Fetches a single page of data from the Google Photos API.
+            """
+            # Fetch media items (single page)
+            ctx.progress(10, "Fetching media items...")
+            ctx.check_cancelled()
+            media_response = self.client.list_media_items(page_size=100)
+            media_items = media_response.get("mediaItems", [])
+            
+            # Fetch albums (single page)
+            ctx.progress(50, "Fetching albums...")
+            ctx.check_cancelled()
+            albums_response = self.client.list_albums(page_size=50)
+            albums = albums_response.get("albums", [])
+            
+            # Fetch shared albums (single page)
+            ctx.progress(90, "Fetching shared albums...")
+            ctx.check_cancelled()
+            shared_albums_response = self.client.list_shared_albums(page_size=50)
+            shared_albums = shared_albums_response.get("sharedAlbums", [])
+            
+            ctx.progress(100, "Complete")
+            return (media_items, albums, shared_albums)
+
+        def progress(percent: int, message: str) -> None:
+            """Progress callback - runs on main thread via signal."""
+            progress_dialog.setValue(percent)
+            if message:
+                progress_dialog.setLabelText(message)
+                self.refresh_button.setText(message)
+            # Process events to update UI
+            progress_dialog.show()
+
+        def done(result: tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]) -> None:
+            """Completion callback - runs on main thread when worker finishes."""
+            progress_dialog.close()
+            
+            media_items, albums, shared_albums = result
+            
+            # Update data
+            self.media_items = media_items
+            self.albums = albums
+            self.shared_albums = shared_albums
+            
+            # Populate tables
             self._populate_media_items_table()
-
-            # Fetch albums
-            self.log.info("Fetching albums...")
-            self.albums = self.client.get_all_albums()
             self._populate_albums_table()
-
-            # Fetch shared albums
-            self.log.info("Fetching shared albums...")
-            self.shared_albums = self.client.get_all_shared_albums()
             self._populate_shared_albums_table()
-
+            
+            # Show completion message
             QMessageBox.information(
                 self,
                 "Data Refreshed",
                 f"Loaded {len(self.media_items)} media items, "
-                f"{len(self.albums)} albums, and {len(self.shared_albums)} shared albums.",
+                f"{len(self.albums)} albums, and {len(self.shared_albums)} shared albums.\n\n"
+                "Note: This is a single page of results. Use 'Load All' to fetch all data.",
             )
-        except Exception as e:
-            self.log.exception("Failed to refresh data")
-            error_msg = str(e)
+            
+            # Reset UI
+            self.refresh_button.setEnabled(True)
+            self.refresh_button.setText("Refresh Data")
+            self.active_worker = None
+            self.log.info("Data refresh completed")
+
+        def cancelled() -> None:
+            """Cancellation callback - runs on main thread when work is cancelled."""
+            progress_dialog.close()
+            self.refresh_button.setEnabled(True)
+            self.refresh_button.setText("Refresh Data")
+            self.active_worker = None
+            self.log.info("Data refresh cancelled")
+
+        def error(msg: str) -> None:
+            """Error callback - runs on main thread when work fails."""
+            progress_dialog.close()
+            error_msg = msg
             # Provide helpful guidance for 403 errors
             if "403" in error_msg or "Forbidden" in error_msg:
                 error_msg = (
@@ -224,9 +332,26 @@ class GooglePhotosView(QWidget):
                     "   → Add 'https://www.googleapis.com/auth/photoslibrary.readonly.appcreateddata' to scopes"
                 )
             QMessageBox.critical(self, "Error", error_msg)
-        finally:
             self.refresh_button.setEnabled(True)
             self.refresh_button.setText("Refresh Data")
+            self.active_worker = None
+            self.log.exception("Failed to refresh data")
+
+        # Connect cancel button to worker cancellation
+        def cancel_work() -> None:
+            if self.active_worker is not None:
+                self.active_worker.cancel()
+
+        progress_dialog.canceled.connect(cancel_work)
+
+        req = WorkRequest(
+            fn=work,
+            on_done=done,
+            on_error=error,
+            on_progress=progress,
+            on_cancel=cancelled,
+        )
+        self.active_worker = self.pool.submit(req)
 
     def _clear_all_tables(self) -> None:
         """Clear all data tables."""

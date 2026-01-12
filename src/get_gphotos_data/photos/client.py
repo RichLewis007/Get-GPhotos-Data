@@ -19,14 +19,16 @@ API_BASE_URL = "https://photoslibrary.googleapis.com/v1"
 class GooglePhotosClient:
     """Client for Google Photos Library API using requests library."""
 
-    def __init__(self, credentials: Credentials) -> None:
+    def __init__(self, credentials: Credentials, debug: bool = False) -> None:
         """Initialize the API client.
 
         Args:
             credentials: OAuth 2.0 credentials from GooglePhotosAuth
+            debug: If True, log detailed API request/response information
         """
         self.log = logging.getLogger(__name__)
         self.credentials = credentials
+        self.debug = debug
         self.session = requests.Session()
         self._update_session_auth()
 
@@ -65,12 +67,38 @@ class GooglePhotosClient:
         # Ensure credentials are valid
         self._update_session_auth()
 
+        # Log request if debug is enabled
+        if self.debug:
+            self.log.info("API Request: %s %s", method, url)
+            if params:
+                self.log.info("  Params: %s", params)
+            if json_data:
+                self.log.info("  JSON Body: %s", json_data)
+
         try:
             response = self.session.request(
                 method=method, url=url, params=params, json=json_data, timeout=30
             )
+            
             response.raise_for_status()
-            return response.json()
+            response_json = response.json()
+            
+            # Log response if debug is enabled
+            if self.debug:
+                self.log.info("API Response: %s %s - Status: %s", method, url, response.status_code)
+                # Log response size for large responses
+                if isinstance(response_json, dict):
+                    if "mediaItems" in response_json:
+                        count = len(response_json.get("mediaItems", []))
+                        self.log.info("  Response contains %d media items", count)
+                    elif "albums" in response_json:
+                        count = len(response_json.get("albums", []))
+                        self.log.info("  Response contains %d albums", count)
+                    elif "sharedAlbums" in response_json:
+                        count = len(response_json.get("sharedAlbums", []))
+                        self.log.info("  Response contains %d shared albums", count)
+            
+            return response_json
         except requests.HTTPError as e:
             # Provide more detailed error information for 403 errors
             if response.status_code == 403:

@@ -31,58 +31,58 @@ A `mediaItem` represents a photo or video in the user's Google Photos library. M
 
 #### Media Item Properties
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `id` | string | Unique identifier for the media item (required) |
-| `description` | string | User-provided description of the media item |
-| `baseUrl` | string | Base URL to access the media item's bytes (temporary, expires) |
-| `productUrl` | string | Link to view the media item in Google Photos |
-| `mimeType` | string | MIME type (e.g., `image/jpeg`, `video/mp4`) |
-| `filename` | string | Original filename of the media item |
-| `mediaMetadata` | object | Metadata specific to the media type (see below) |
-| `contributorInfo` | object | Information about who contributed the media item |
-| `filename` | string | Original filename when uploaded |
+| Property          | Type   | Description                                                    |
+| ----------------- | ------ | -------------------------------------------------------------- |
+| `id`              | string | Unique identifier for the media item (required)                |
+| `description`     | string | User-provided description of the media item                    |
+| `baseUrl`         | string | Base URL to access the media item's bytes (temporary, expires) |
+| `productUrl`      | string | Link to view the media item in Google Photos                   |
+| `mimeType`        | string | MIME type (e.g., `image/jpeg`, `video/mp4`)                    |
+| `filename`        | string | Original filename of the media item                            |
+| `mediaMetadata`   | object | Metadata specific to the media type (see below)                |
+| `contributorInfo` | object | Information about who contributed the media item               |
+| `filename`        | string | Original filename when uploaded                                |
 
 #### Media Metadata (`mediaMetadata`)
 
 Common metadata fields (applicable to both photos and videos):
 
-| Property | Type | Description |
-|----------|------|-------------|
+| Property       | Type   | Description                                                 |
+| -------------- | ------ | ----------------------------------------------------------- |
 | `creationTime` | string | Timestamp when the media item was created (ISO 8601 format) |
-| `width` | string | Width of the media item in pixels |
-| `height` | string | Height of the media item in pixels |
-| `photo` | object | Photo-specific metadata (see below) |
-| `video` | object | Video-specific metadata (see below) |
+| `width`        | string | Width of the media item in pixels                           |
+| `height`       | string | Height of the media item in pixels                          |
+| `photo`        | object | Photo-specific metadata (see below)                         |
+| `video`        | object | Video-specific metadata (see below)                         |
 
 #### Photo Metadata (`mediaMetadata.photo`)
 
 Available when `mimeType` starts with `image/`:
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `cameraMake` | string | Camera manufacturer (e.g., "Canon", "Apple") |
-| `cameraModel` | string | Camera model name |
-| `focalLength` | number | Focal length of the lens in millimeters |
-| `apertureFNumber` | number | Aperture f-number (e.g., 2.8, 5.6) |
-| `isoEquivalent` | number | ISO equivalent setting |
-| `exposureTime` | string | Exposure time in seconds (e.g., "0.004", "1/250") |
+| Property          | Type   | Description                                       |
+| ----------------- | ------ | ------------------------------------------------- |
+| `cameraMake`      | string | Camera manufacturer (e.g., "Canon", "Apple")      |
+| `cameraModel`     | string | Camera model name                                 |
+| `focalLength`     | number | Focal length of the lens in millimeters           |
+| `apertureFNumber` | number | Aperture f-number (e.g., 2.8, 5.6)                |
+| `isoEquivalent`   | number | ISO equivalent setting                            |
+| `exposureTime`    | string | Exposure time in seconds (e.g., "0.004", "1/250") |
 
 #### Video Metadata (`mediaMetadata.video`)
 
 Available when `mimeType` starts with `video/`:
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `fps` | number | Frames per second |
+| Property | Type   | Description                                                        |
+| -------- | ------ | ------------------------------------------------------------------ |
+| `fps`    | number | Frames per second                                                  |
 | `status` | string | Processing status (`UNSPECIFIED`, `PROCESSING`, `READY`, `FAILED`) |
 
 #### Contributor Info (`contributorInfo`)
 
-| Property | Type | Description |
-|----------|------|-------------|
+| Property                | Type   | Description                                    |
+| ----------------------- | ------ | ---------------------------------------------- |
 | `profilePictureBaseUrl` | string | Base URL for the contributor's profile picture |
-| `displayName` | string | Display name of the contributor |
+| `displayName`           | string | Display name of the contributor                |
 
 #### Base URL Parameters
 
@@ -105,28 +105,28 @@ An `album` is a collection of media items. Albums can only be accessed if they w
 
 #### Album Properties
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `id` | string | Unique identifier for the album |
-| `title` | string | Title of the album |
-| `productUrl` | string | Link to view the album in Google Photos |
-| `isWriteable` | boolean | Whether the album can be modified by the application |
-| `shareInfo` | object | Sharing information (if the album is shared) |
-| `mediaItemsCount` | string | Number of media items in the album |
-| `coverPhotoBaseUrl` | string | Base URL for the cover photo |
-| `coverPhotoMediaItemId` | string | Media item ID of the cover photo |
+| Property                | Type    | Description                                          |
+| ----------------------- | ------- | ---------------------------------------------------- |
+| `id`                    | string  | Unique identifier for the album                      |
+| `title`                 | string  | Title of the album                                   |
+| `productUrl`            | string  | Link to view the album in Google Photos              |
+| `isWriteable`           | boolean | Whether the album can be modified by the application |
+| `shareInfo`             | object  | Sharing information (if the album is shared)         |
+| `mediaItemsCount`       | string  | Number of media items in the album                   |
+| `coverPhotoBaseUrl`     | string  | Base URL for the cover photo                         |
+| `coverPhotoMediaItemId` | string  | Media item ID of the cover photo                     |
 
 #### Share Info (`shareInfo`)
 
 Available when the album is shared:
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `sharedAlbumOptions` | object | Options for the shared album |
-| `shareableUrl` | string | URL that can be used to share the album |
-| `shareToken` | string | Token used for sharing operations |
-| `isJoined` | boolean | Whether the current user has joined the shared album |
-| `isOwned` | boolean | Whether the current user owns the album |
+| Property             | Type    | Description                                          |
+| -------------------- | ------- | ---------------------------------------------------- |
+| `sharedAlbumOptions` | object  | Options for the shared album                         |
+| `shareableUrl`       | string  | URL that can be used to share the album              |
+| `shareToken`         | string  | Token used for sharing operations                    |
+| `isJoined`           | boolean | Whether the current user has joined the shared album |
+| `isOwned`            | boolean | Whether the current user owns the album              |
 
 ---
 
@@ -155,6 +155,7 @@ Lists media items uploaded by your application.
 **Endpoint**: `GET https://photoslibrary.googleapis.com/v1/mediaItems`
 
 **Query Parameters**:
+
 - `pageSize` (integer) - Maximum number of media items to return (default: 25, max: 100)
 - `pageToken` (string) - Token for pagination
 - `filters` (object) - Filters to apply (date range, media type, etc.)
@@ -168,6 +169,7 @@ Retrieves a specific media item by ID.
 **Endpoint**: `GET https://photoslibrary.googleapis.com/v1/mediaItems/{mediaItemId}`
 
 **Path Parameters**:
+
 - `mediaItemId` (string) - The ID of the media item to retrieve
 
 **Response**: Single `mediaItem` object
@@ -179,6 +181,7 @@ Searches for media items based on filters.
 **Endpoint**: `POST https://photoslibrary.googleapis.com/v1/mediaItems:search`
 
 **Request Body**:
+
 - `albumId` (string) - Search within a specific album
 - `pageSize` (integer) - Maximum results per page
 - `pageToken` (string) - Pagination token
@@ -198,6 +201,7 @@ Uploads and creates multiple media items.
 **Endpoint**: `POST https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate`
 
 **Request Body**:
+
 - Array of media item creation requests
 - Each request includes:
   - `description` (string) - Description for the media item
@@ -216,6 +220,7 @@ Lists albums created by your application.
 **Endpoint**: `GET https://photoslibrary.googleapis.com/v1/albums`
 
 **Query Parameters**:
+
 - `pageSize` (integer) - Maximum number of albums to return (default: 20, max: 50)
 - `pageToken` (string) - Token for pagination
 
@@ -228,6 +233,7 @@ Retrieves a specific album by ID.
 **Endpoint**: `GET https://photoslibrary.googleapis.com/v1/albums/{albumId}`
 
 **Path Parameters**:
+
 - `albumId` (string) - The ID of the album to retrieve
 
 **Response**: Single `album` object
@@ -239,6 +245,7 @@ Creates a new album.
 **Endpoint**: `POST https://photoslibrary.googleapis.com/v1/albums`
 
 **Request Body**:
+
 - `album` (object):
   - `title` (string) - Title of the album
 
@@ -251,6 +258,7 @@ Adds enrichment (like location or text) to an album.
 **Endpoint**: `POST https://photoslibrary.googleapis.com/v1/albums/{albumId}:addEnrichment`
 
 **Request Body**:
+
 - `newEnrichmentItem` (object) - The enrichment to add (location, map, text, etc.)
 - `albumPosition` (object) - Position in the album
 
@@ -263,6 +271,7 @@ Adds multiple media items to an album.
 **Endpoint**: `POST https://photoslibrary.googleapis.com/v1/albums/{albumId}:batchAddMediaItems`
 
 **Request Body**:
+
 - `mediaItemIds` (array of strings) - IDs of media items to add
 
 **Response**: Results of the batch operation
@@ -274,6 +283,7 @@ Removes multiple media items from an album.
 **Endpoint**: `POST https://photoslibrary.googleapis.com/v1/albums/{albumId}:batchRemoveMediaItems`
 
 **Request Body**:
+
 - `mediaItemIds` (array of strings) - IDs of media items to remove
 
 **Response**: Results of the batch operation
@@ -289,6 +299,7 @@ Lists albums shared with the user.
 **Endpoint**: `GET https://photoslibrary.googleapis.com/v1/sharedAlbums`
 
 **Query Parameters**:
+
 - `pageSize` (integer) - Maximum number of albums to return
 - `pageToken` (string) - Token for pagination
 
@@ -301,6 +312,7 @@ Joins a shared album.
 **Endpoint**: `POST https://photoslibrary.googleapis.com/v1/sharedAlbums:join`
 
 **Request Body**:
+
 - `shareToken` (string) - Token from the shared album URL
 
 **Response**: `album` object
@@ -312,6 +324,7 @@ Shares an album.
 **Endpoint**: `POST https://photoslibrary.googleapis.com/v1/albums/{albumId}:share`
 
 **Request Body**:
+
 - `sharedAlbumOptions` (object) - Options for sharing (isCollaborative, isCommentable)
 
 **Response**: `shareInfo` object
@@ -337,13 +350,11 @@ Filters media items by creation date:
   "dateFilter": {
     "ranges": [
       {
-        "startDate": {"year": 2024, "month": 1, "day": 1},
-        "endDate": {"year": 2024, "month": 12, "day": 31}
+        "startDate": { "year": 2024, "month": 1, "day": 1 },
+        "endDate": { "year": 2024, "month": 12, "day": 31 }
       }
     ],
-    "dates": [
-      {"year": 2024, "month": 6, "day": 15}
-    ]
+    "dates": [{ "year": 2024, "month": 6, "day": 15 }]
   }
 }
 ```
@@ -362,6 +373,7 @@ Filters by content categories:
 ```
 
 **Content Categories**:
+
 - `NONE`
 - `LANDSCAPES`
 - `RECEIPTS`
@@ -496,4 +508,4 @@ media_items = response.json()
 
 ---
 
-*Last Updated: 2025*
+_Last Updated: 2026_

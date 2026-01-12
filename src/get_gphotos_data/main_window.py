@@ -322,7 +322,8 @@ class MainWindow(QMainWindow):
         self.tab_widget = QTabWidget(self)
 
         # Tab 1: Google Photos (main feature)
-        google_photos_view = GooglePhotosView(self)
+        debug_api = self.settings.get_debug_api()
+        google_photos_view = GooglePhotosView(self, debug_api=debug_api)
         self.tab_widget.addTab(google_photos_view, "Google Photos")
 
         # Tab 2: Main/File operations (original UI)

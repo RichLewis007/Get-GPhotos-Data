@@ -69,6 +69,29 @@ def app_data_dir() -> Path:
     return Path(user_data_dir(appname=APP_NAME, appauthor=APP_ORG, roaming=True))
 
 
+def app_executable_dir() -> Path:
+    """Return the directory where the application executable or script is located.
+    
+    For frozen executables (PyInstaller, etc.), returns the directory containing the executable.
+    For scripts, returns the directory containing the main script.
+    
+    Returns:
+        Path to the application directory
+    """
+    import sys
+    if getattr(sys, "frozen", False):
+        # Running as compiled executable (PyInstaller, etc.)
+        return Path(sys.executable).parent
+    else:
+        # Running as script - return the directory of the main module
+        # This will be the project root when running from source
+        main_module = sys.modules.get("__main__")
+        if main_module and hasattr(main_module, "__file__"):
+            return Path(main_module.__file__).parent
+        # Fallback to current working directory
+        return Path.cwd()
+
+
 def qss_text(theme: str = "light") -> str:
     """Return the bundled QSS stylesheet as text for the given theme."""
     filename = "styles_dark.qss" if theme == "dark" else "styles.qss"
