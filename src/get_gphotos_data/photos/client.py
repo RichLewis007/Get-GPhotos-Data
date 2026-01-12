@@ -41,12 +41,14 @@ class GooglePhotosClient:
                 raise ValueError("Credentials are invalid and cannot be refreshed")
 
         # Set Authorization header
-        self.session.headers.update(
-            {"Authorization": f"Bearer {self.credentials.token}"}
-        )
+        self.session.headers.update({"Authorization": f"Bearer {self.credentials.token}"})
 
     def _request(
-        self, method: str, endpoint: str, params: dict[str, Any] | None = None, json_data: dict[str, Any] | None = None
+        self,
+        method: str,
+        endpoint: str,
+        params: dict[str, Any] | None = None,
+        json_data: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Make an API request and return JSON response.
 
@@ -63,7 +65,7 @@ class GooglePhotosClient:
             requests.RequestException: If the request fails
         """
         url = f"{API_BASE_URL}/{endpoint.lstrip('/')}"
-        
+
         # Ensure credentials are valid
         self._update_session_auth()
 
@@ -79,10 +81,10 @@ class GooglePhotosClient:
             response = self.session.request(
                 method=method, url=url, params=params, json=json_data, timeout=30
             )
-            
+
             response.raise_for_status()
             response_json = response.json()
-            
+
             # Log response if debug is enabled
             if self.debug:
                 self.log.info("API Response: %s %s - Status: %s", method, url, response.status_code)
@@ -97,7 +99,7 @@ class GooglePhotosClient:
                     elif "sharedAlbums" in response_json:
                         count = len(response_json.get("sharedAlbums", []))
                         self.log.info("  Response contains %d shared albums", count)
-            
+
             return response_json
         except requests.HTTPError as e:
             # HTTPError is raised by raise_for_status(), so response should exist
@@ -207,9 +209,7 @@ class GooglePhotosClient:
 
         return self._request("POST", "mediaItems:search", json_data=request_body)
 
-    def get_all_media_items(
-        self, page_size: int = 100
-    ) -> list[dict[str, Any]]:
+    def get_all_media_items(self, page_size: int = 100) -> list[dict[str, Any]]:
         """Get all media items (handles pagination automatically).
 
         Args:
@@ -234,9 +234,7 @@ class GooglePhotosClient:
 
     # Albums Methods
 
-    def list_albums(
-        self, page_size: int = 20, page_token: str | None = None
-    ) -> dict[str, Any]:
+    def list_albums(self, page_size: int = 20, page_token: str | None = None) -> dict[str, Any]:
         """List albums.
 
         Args:

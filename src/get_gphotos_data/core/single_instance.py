@@ -81,8 +81,9 @@ class SingleInstanceGuard:
             # Log as warning instead of error - this is non-critical, app can still run
             # The address might be in use if another instance is starting simultaneously
             self.log.warning(
-                "Failed to start single instance server: %s (this is non-critical, app will continue)",
-                self.server.errorString()
+                "Failed to start single instance server: %s "
+                "(this is non-critical, app will continue)",
+                self.server.errorString(),
             )
 
     def send_message_to_existing_instance(self, message: bytes = b"activate") -> bool:

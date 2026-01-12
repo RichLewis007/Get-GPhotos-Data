@@ -53,4 +53,6 @@ def setup_logging(enable_console: bool = False) -> None:
         console_handler.setFormatter(fmt)
         root.addHandler(console_handler)
 
-    logging.getLogger(__name__).info("Logging initialized: %s (console: %s)", log_file, enable_console)
+    logging.getLogger(__name__).info(
+        "Logging initialized: %s (console: %s)", log_file, enable_console
+    )

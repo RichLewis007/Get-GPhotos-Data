@@ -71,15 +71,16 @@ def app_data_dir() -> Path:
 
 def app_executable_dir() -> Path:
     """Return the directory where the application executable or script is located.
-    
+
     For frozen executables (PyInstaller, etc.), returns the directory containing the executable.
     For scripts, returns the directory containing the main script.
     For development (running from virtual environment), returns the project root.
-    
+
     Returns:
         Path to the application directory (project root in development)
     """
     import sys
+
     if getattr(sys, "frozen", False):
         # Running as compiled executable (PyInstaller, etc.)
         return Path(sys.executable).parent
@@ -88,11 +89,12 @@ def app_executable_dir() -> Path:
         main_module = sys.modules.get("__main__")
         if main_module and hasattr(main_module, "__file__") and main_module.__file__ is not None:
             script_dir = Path(main_module.__file__).parent
-            
+
             # Check if we're running from a virtual environment (development mode)
             # If the script is in .venv/bin, .env/bin, venv/bin, or env/bin, go up to project root
             script_path_str = str(script_dir)
-            if any(venv_path in script_path_str for venv_path in [".venv/bin", ".env/bin", "venv/bin", "env/bin"]):
+            venv_paths = [".venv/bin", ".env/bin", "venv/bin", "env/bin"]
+            if any(venv_path in script_path_str for venv_path in venv_paths):
                 # Navigate from venv/bin to project root
                 # Find the project root by looking for pyproject.toml
                 current = script_dir
@@ -105,7 +107,7 @@ def app_executable_dir() -> Path:
                     current = parent
                 # If pyproject.toml not found, go up two levels from .venv/bin
                 return script_dir.parent.parent
-            
+
             return script_dir
         # Fallback to current working directory
         return Path.cwd()

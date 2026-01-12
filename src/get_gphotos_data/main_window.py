@@ -448,7 +448,7 @@ class MainWindow(QMainWindow):
         # Info dock widget
         info_dock = QDockWidget("Information", self)
         info_dock.setObjectName("informationDock")  # Required for window state persistence
-        
+
         # Load UI from .ui file
         info_widget = load_ui("information_dock.ui", self)
         info_dock.setWidget(info_widget)
@@ -459,7 +459,7 @@ class MainWindow(QMainWindow):
         # Splitter demo dock (optional - can be shown via View menu)
         splitter_dock = QDockWidget("Splitter Demo", self)
         splitter_dock.setObjectName("splitterDemoDock")  # Required for window state persistence
-        
+
         # Load UI from .ui file
         splitter_widget = load_ui("splitter_dock.ui", self)
         splitter_dock.setWidget(splitter_widget)
@@ -771,6 +771,7 @@ class MainWindow(QMainWindow):
             self.active_worker.cancel()
             self.label.setText("Cancelling task before exit...")
             self.statusBar().showMessage("Cancelling task before exit...", 2000)
+
             # Give the worker a brief moment to cancel cooperatively
             # The closeEvent will also handle cleanup if the worker is still running
             def delayed_close() -> None:

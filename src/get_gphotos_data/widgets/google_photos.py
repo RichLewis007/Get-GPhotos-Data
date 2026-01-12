@@ -28,9 +28,12 @@ from PySide6.QtWidgets import (
 
 from ..core.paths import app_data_dir, app_executable_dir
 from ..core.ui_loader import load_ui
-from ..core.workers import WorkContext, WorkRequest, Worker, WorkerPool
+from ..core.workers import WorkContext, Worker, WorkerPool, WorkRequest
 from ..photos.auth import GooglePhotosAuth
 from ..photos.client import GooglePhotosClient
+
+# Type alias for worker result tuple
+WorkerResult = tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]
 
 # Token file name (same as in auth.py)
 TOKEN_FILE = "google_photos_token.json"
@@ -52,7 +55,7 @@ class GooglePhotosView(QWidget):
         super().__init__(parent)
         self.log = logging.getLogger(__name__)
         self.debug_api = debug_api
-        
+
         # Load UI from .ui file
         ui_widget = load_ui("google_photos_view.ui", self)
         layout = QVBoxLayout(self)
@@ -64,55 +67,55 @@ class GooglePhotosView(QWidget):
         if auth_status_label is None:
             raise RuntimeError("authStatusLabel not found in google_photos_view.ui")
         self.auth_status_label = cast(QLabel, auth_status_label)
-            
+
         authenticate_button = ui_widget.findChild(QPushButton, "authenticateButton")
         if authenticate_button is None:
             raise RuntimeError("authenticateButton not found in google_photos_view.ui")
         self.authenticate_button = cast(QPushButton, authenticate_button)
-            
+
         refresh_button = ui_widget.findChild(QPushButton, "refreshButton")
         if refresh_button is None:
             raise RuntimeError("refreshButton not found in google_photos_view.ui")
         self.refresh_button = cast(QPushButton, refresh_button)
-            
+
         data_tabs = ui_widget.findChild(QTabWidget, "dataTabs")
         if data_tabs is None:
             raise RuntimeError("dataTabs not found in google_photos_view.ui")
         self.data_tabs = cast(QTabWidget, data_tabs)
-        
+
         # Media Items tab
         media_items_count_label = ui_widget.findChild(QLabel, "mediaItemsCountLabel")
         if media_items_count_label is None:
             raise RuntimeError("mediaItemsCountLabel not found in google_photos_view.ui")
         self.media_items_count_label = cast(QLabel, media_items_count_label)
-            
+
         media_items_table = ui_widget.findChild(QTableWidget, "mediaItemsTable")
         if media_items_table is None:
             raise RuntimeError("mediaItemsTable not found in google_photos_view.ui")
         self.media_items_table = cast(QTableWidget, media_items_table)
-        
+
         # Albums tab
         albums_count_label = ui_widget.findChild(QLabel, "albumsCountLabel")
         if albums_count_label is None:
             raise RuntimeError("albumsCountLabel not found in google_photos_view.ui")
         self.albums_count_label = cast(QLabel, albums_count_label)
-            
+
         albums_table = ui_widget.findChild(QTableWidget, "albumsTable")
         if albums_table is None:
             raise RuntimeError("albumsTable not found in google_photos_view.ui")
         self.albums_table = cast(QTableWidget, albums_table)
-        
+
         # Shared Albums tab
         shared_albums_count_label = ui_widget.findChild(QLabel, "sharedAlbumsCountLabel")
         if shared_albums_count_label is None:
             raise RuntimeError("sharedAlbumsCountLabel not found in google_photos_view.ui")
         self.shared_albums_count_label = cast(QLabel, shared_albums_count_label)
-            
+
         shared_albums_table = ui_widget.findChild(QTableWidget, "sharedAlbumsTable")
         if shared_albums_table is None:
             raise RuntimeError("sharedAlbumsTable not found in google_photos_view.ui")
         self.shared_albums_table = cast(QTableWidget, shared_albums_table)
-        
+
         # Details tab
         details_text = ui_widget.findChild(QTextEdit, "detailsText")
         if details_text is None:
@@ -122,7 +125,7 @@ class GooglePhotosView(QWidget):
         # Connect signals
         self.authenticate_button.clicked.connect(self.on_authenticate)
         self.refresh_button.clicked.connect(self.on_refresh_data)
-        
+
         # Connect table selection changes to show details
         self.media_items_table.itemSelectionChanged.connect(self.on_media_item_selected)
         self.albums_table.itemSelectionChanged.connect(self.on_album_selected)
@@ -135,11 +138,11 @@ class GooglePhotosView(QWidget):
         self.albums: list[dict[str, Any]] = []
         self.shared_albums: list[dict[str, Any]] = []
         self.pool = WorkerPool()
-        self.active_worker: Worker[tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]] | None = None
+        self.active_worker: Worker[WorkerResult] | None = None
 
         # Disable authenticate button by default
         self.authenticate_button.setEnabled(False)
-        
+
         self._update_ui_state(False)
 
         # Try to load credentials.json from program's directory
@@ -186,14 +189,15 @@ class GooglePhotosView(QWidget):
 
     def _try_load_credentials(self) -> None:
         """Try to load credentials.json from the program's directory.
-        
-        If credentials.json is found and a token file exists, attempts to authenticate automatically.
+
+        If credentials.json is found and a token file exists,
+        attempts to authenticate automatically.
         If not found or authentication fails, enables the authenticate button.
         """
         app_dir = app_executable_dir()
         credentials_path = app_dir / "credentials.json"
         token_path = app_data_dir() / TOKEN_FILE
-        
+
         if credentials_path.exists():
             self.log.info("Found credentials.json in program directory: %s", credentials_path)
             # Only auto-authenticate if a token file exists (user has authenticated before)
@@ -210,13 +214,16 @@ class GooglePhotosView(QWidget):
                 except Exception as e:
                     # Authentication failed - user may need to re-authenticate
                     self.log.warning("Failed to authenticate automatically: %s", e)
-                    self.auth = GooglePhotosAuth(credentials_path)  # Keep auth instance for manual auth
+                    # Keep auth instance for manual auth
+                    self.auth = GooglePhotosAuth(credentials_path)
                     self.client = None
                     self._update_ui_state(False)
                     self.authenticate_button.setEnabled(True)
             else:
-                # Credentials file exists but no token - user needs to authenticate for first time
-                self.log.info("credentials.json found but no token file - user needs to authenticate")
+                # Credentials file exists but no token - user needs to authenticate
+                self.log.info(
+                    "credentials.json found but no token file - user needs to authenticate"
+                )
                 self.auth = GooglePhotosAuth(credentials_path)
                 self.authenticate_button.setEnabled(True)
         else:
@@ -242,7 +249,9 @@ class GooglePhotosView(QWidget):
             credentials = self.auth.authenticate()
             self.client = GooglePhotosClient(credentials, debug=self.debug_api)
             self._update_ui_state(True)
-            QMessageBox.information(self, "Authentication", "Successfully authenticated with Google Photos!")
+            QMessageBox.information(
+                self, "Authentication", "Successfully authenticated with Google Photos!"
+            )
             # Automatically refresh data after authentication
             self.on_refresh_data()
         except FileNotFoundError as e:
@@ -253,7 +262,7 @@ class GooglePhotosView(QWidget):
 
     def on_refresh_data(self) -> None:
         """Refresh data from Google Photos API using a background worker.
-        
+
         Fetches a single page of data for quick testing.
         """
         if not self.client:
@@ -269,7 +278,9 @@ class GooglePhotosView(QWidget):
         assert client is not None  # Type narrowing
 
         # Create progress dialog
-        progress_dialog = QProgressDialog("Loading data from Google Photos...", "Cancel", 0, 100, self)
+        progress_dialog = QProgressDialog(
+            "Loading data from Google Photos...", "Cancel", 0, 100, self
+        )
         progress_dialog.setWindowTitle("Loading Google Photos Data")
         progress_dialog.setWindowModality(Qt.WindowModality.WindowModal)
         progress_dialog.setMinimumDuration(0)  # Show immediately
@@ -279,9 +290,9 @@ class GooglePhotosView(QWidget):
         self.refresh_button.setEnabled(False)
         self.refresh_button.setText("Loading...")
 
-        def work(ctx: WorkContext) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+        def work(ctx: WorkContext) -> WorkerResult:
             """Background work function - runs in worker thread.
-            
+
             Fetches a single page of data from the Google Photos API.
             """
             # Fetch media items (single page)
@@ -289,19 +300,19 @@ class GooglePhotosView(QWidget):
             ctx.check_cancelled()
             media_response = client.list_media_items(page_size=100)
             media_items = media_response.get("mediaItems", [])
-            
+
             # Fetch albums (single page)
             ctx.progress(50, "Fetching albums...")
             ctx.check_cancelled()
             albums_response = client.list_albums(page_size=50)
             albums = albums_response.get("albums", [])
-            
+
             # Fetch shared albums (single page)
             ctx.progress(90, "Fetching shared albums...")
             ctx.check_cancelled()
             shared_albums_response = client.list_shared_albums(page_size=50)
             shared_albums = shared_albums_response.get("sharedAlbums", [])
-            
+
             ctx.progress(100, "Complete")
             return (media_items, albums, shared_albums)
 
@@ -314,22 +325,22 @@ class GooglePhotosView(QWidget):
             # Process events to update UI
             progress_dialog.show()
 
-        def done(result: tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]) -> None:
+        def done(result: WorkerResult) -> None:
             """Completion callback - runs on main thread when worker finishes."""
             progress_dialog.close()
-            
+
             media_items, albums, shared_albums = result
-            
+
             # Update data
             self.media_items = media_items
             self.albums = albums
             self.shared_albums = shared_albums
-            
+
             # Populate tables
             self._populate_media_items_table()
             self._populate_albums_table()
             self._populate_shared_albums_table()
-            
+
             # Show completion message
             QMessageBox.information(
                 self,
@@ -338,7 +349,7 @@ class GooglePhotosView(QWidget):
                 f"{len(self.albums)} albums, and {len(self.shared_albums)} shared albums.\n\n"
                 "Note: This is a single page of results. Use 'Load All' to fetch all data.",
             )
-            
+
             # Reset UI
             self.refresh_button.setEnabled(True)
             self.refresh_button.setText("Refresh Data")
@@ -367,7 +378,8 @@ class GooglePhotosView(QWidget):
                     "2. The OAuth scope was not granted during authentication\n"
                     "   → Try re-authenticating and make sure to grant all permissions\n"
                     "3. The scope is not added to your OAuth consent screen\n"
-                    "   → Add 'https://www.googleapis.com/auth/photoslibrary.readonly.appcreateddata' to scopes"
+                    "   → Add 'https://www.googleapis.com/auth/"
+                    "photoslibrary.readonly.appcreateddata' to scopes"
                 )
             QMessageBox.critical(self, "Error", error_msg)
             self.refresh_button.setEnabled(True)
