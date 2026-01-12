@@ -4,6 +4,8 @@ A Python desktop GUI application to access and view Google Photos data via their
 
 **Author:** Rich Lewis - GitHub: [@RichLewis007](https://github.com/RichLewis007)
 
+![get-gphotos-data](images/get-gphotos-data1-med.jpg)
+
 ## Features
 
 - **Google Photos Integration**: Access your Google Photos library through the official API
@@ -205,6 +207,18 @@ get-gphotos-data/
 See `pyproject.toml` for complete dependency list.
 
 ## Troubleshooting
+
+### 403 Forbidden Error
+
+If you get a `403 Client Error: Forbidden` when trying to refresh data, see the [TROUBLESHOOTING.md](TROUBLESHOOTING.md) guide for detailed solutions.
+
+**Quick fixes:**
+
+1. **Enable the API**: Make sure "Google Photos Library API" is enabled in Google Cloud Console (APIs & Services > Library)
+2. **Add scope to consent screen**: Add `https://www.googleapis.com/auth/photoslibrary.readonly` to your OAuth consent screen scopes
+3. **Re-authenticate**: Delete the token file and re-authenticate after making changes
+
+See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for complete troubleshooting steps.
 
 ### "Credentials file not found"
 

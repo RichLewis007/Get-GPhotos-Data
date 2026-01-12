@@ -71,6 +71,30 @@ class GooglePhotosClient:
             )
             response.raise_for_status()
             return response.json()
+        except requests.HTTPError as e:
+            # Provide more detailed error information for 403 errors
+            if response.status_code == 403:
+                error_detail = ""
+                try:
+                    error_json = response.json()
+                    error_detail = error_json.get("error", {}).get("message", "")
+                    if error_detail:
+                        error_detail = f"\nError details: {error_detail}"
+                except Exception:
+                    pass
+                self.log.error(
+                    "API request forbidden (403): %s %s%s\n"
+                    "Common causes:\n"
+                    "1. Google Photos Library API not enabled in Google Cloud Console\n"
+                    "2. OAuth scope not granted or not in consent screen\n"
+                    "3. Insufficient permissions",
+                    method,
+                    url,
+                    error_detail,
+                )
+            else:
+                self.log.error("API request failed: %s %s - %s", method, url, e)
+            raise
         except requests.RequestException as e:
             self.log.error("API request failed: %s %s - %s", method, url, e)
             raise

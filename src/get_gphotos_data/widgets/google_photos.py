@@ -210,7 +210,20 @@ class GooglePhotosView(QWidget):
             )
         except Exception as e:
             self.log.exception("Failed to refresh data")
-            QMessageBox.critical(self, "Error", f"Failed to refresh data:\n{e}")
+            error_msg = str(e)
+            # Provide helpful guidance for 403 errors
+            if "403" in error_msg or "Forbidden" in error_msg:
+                error_msg = (
+                    f"403 Forbidden Error:\n{error_msg}\n\n"
+                    "This usually means:\n"
+                    "1. The Google Photos Library API is not enabled in your Google Cloud Console\n"
+                    "   → Go to APIs & Services > Library > Enable 'Google Photos Library API'\n"
+                    "2. The OAuth scope was not granted during authentication\n"
+                    "   → Try re-authenticating and make sure to grant all permissions\n"
+                    "3. The scope is not added to your OAuth consent screen\n"
+                    "   → Add 'https://www.googleapis.com/auth/photoslibrary.readonly' to scopes"
+                )
+            QMessageBox.critical(self, "Error", error_msg)
         finally:
             self.refresh_button.setEnabled(True)
             self.refresh_button.setText("Refresh Data")
