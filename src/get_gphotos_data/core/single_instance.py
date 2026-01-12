@@ -61,7 +61,11 @@ class SingleInstanceGuard:
         """Create a local server to listen for other instances."""
         self.server = QLocalServer()
 
-        # Remove existing socket file if it exists (Linux/Unix)
+        # Remove existing server if it exists (Qt's recommended way to clean up stale sockets)
+        # This works on all platforms (macOS, Linux, Windows)
+        QLocalServer.removeServer(socket_name)
+
+        # Also try to remove socket file if it exists (Linux/Unix fallback)
         if sys.platform != "win32":
             import contextlib
 
@@ -74,7 +78,12 @@ class SingleInstanceGuard:
             self.log.debug("Single instance server started: %s", socket_name)
             self._is_running = True
         else:
-            self.log.error("Failed to start single instance server: %s", self.server.errorString())
+            # Log as warning instead of error - this is non-critical, app can still run
+            # The address might be in use if another instance is starting simultaneously
+            self.log.warning(
+                "Failed to start single instance server: %s (this is non-critical, app will continue)",
+                self.server.errorString()
+            )
 
     def send_message_to_existing_instance(self, message: bytes = b"activate") -> bool:
         """
