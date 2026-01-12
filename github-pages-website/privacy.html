@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacy Policy - get-gphotos-data</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 40px;
+      }
+
+      h1 {
+        color: #667eea;
+        font-size: 2.5em;
+        margin-bottom: 10px;
+      }
+
+      .subtitle {
+        color: #666;
+        font-size: 1em;
+        margin-bottom: 30px;
+        font-style: italic;
+      }
+
+      h2 {
+        color: #667eea;
+        font-size: 1.8em;
+        margin: 40px 0 20px 0;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #eee;
+      }
+
+      h3 {
+        color: #764ba2;
+        font-size: 1.3em;
+        margin: 30px 0 15px 0;
+      }
+
+      p {
+        margin-bottom: 15px;
+      }
+
+      ul,
+      ol {
+        margin-left: 30px;
+        margin-bottom: 20px;
+      }
+
+      li {
+        margin-bottom: 10px;
+      }
+
+      .last-updated {
+        color: #666;
+        font-size: 0.9em;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #eee;
+      }
+
+      .back-link {
+        display: inline-block;
+        margin-top: 40px;
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .back-link:hover {
+        text-decoration: underline;
+      }
+
+      .contact-info {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        border-left: 4px solid #667eea;
+        margin: 20px 0;
+      }
+
+      .highlight {
+        background: #fff3cd;
+        padding: 15px;
+        border-radius: 5px;
+        border-left: 4px solid #ffc107;
+        margin: 20px 0;
+      }
+
+      .highlight strong {
+        color: #856404;
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          padding: 20px;
+        }
+
+        h1 {
+          font-size: 2em;
+        }
+
+        h2 {
+          font-size: 1.5em;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Privacy Policy</h1>
+      <p class="subtitle">get-gphotos-data Application</p>
+
+      <p class="last-updated">
+        <strong>Last Updated:</strong> January 2025
+      </p>
+
+      <h2>1. Introduction</h2>
+      <p>
+        This Privacy Policy describes how the get-gphotos-data application (the
+        "Application") collects, uses, and protects your information. This
+        policy complies with the General Data Protection Regulation (GDPR) for
+        users in the European Union and the California Consumer Privacy Act
+        (CCPA) and other applicable US privacy laws.
+      </p>
+
+      <p>
+        By using this Application, you agree to the collection and use of
+        information in accordance with this policy.
+      </p>
+
+      <h2>2. Information We Collect</h2>
+
+      <h3>2.1 Authentication Data</h3>
+      <p>
+        The Application uses Google OAuth 2.0 for authentication. The following
+        data is stored locally on your device:
+      </p>
+      <ul>
+        <li>
+          <strong>OAuth Tokens:</strong> Access tokens and refresh tokens
+          provided by Google are stored locally on your device in the
+          application data directory.
+        </li>
+        <li>
+          <strong>Credentials:</strong> Your OAuth client credentials file is
+          stored locally (you provide this file; it is not collected by us).
+        </li>
+      </ul>
+
+      <h3>2.2 Google Photos Data</h3>
+      <p>
+        When you use the Application, it accesses the following data from your
+        Google Photos account:
+      </p>
+      <ul>
+        <li>Media items (photos and videos) uploaded by the Application</li>
+        <li>Albums created by the Application</li>
+        <li>Metadata associated with media items (creation dates, dimensions,
+          camera settings, etc.)</li>
+        <li>Album information (titles, item counts, sharing status)</li>
+      </ul>
+      <p class="highlight">
+        <strong>Important:</strong> The Application only accesses media items
+        and albums that were created by the Application itself. It does not
+        access your existing Google Photos library.
+      </p>
+
+      <h3>2.3 Application Usage Data</h3>
+      <p>
+        The Application may generate local log files on your device for error
+        tracking and debugging purposes. These logs may contain:
+      </p>
+      <ul>
+        <li>Error messages and stack traces</li>
+        <li>API request/response information</li>
+        <li>Application state information</li>
+      </ul>
+      <p>All log files are stored locally on your device and are never transmitted to external servers.</p>
+
+      <h2>3. How We Use Your Information</h2>
+      <p>The Application uses the collected information for the following purposes:</p>
+      <ul>
+        <li>
+          <strong>Authentication:</strong> OAuth tokens are used to authenticate
+          API requests to Google Photos
+        </li>
+        <li>
+          <strong>Data Display:</strong> Google Photos data is retrieved and
+          displayed in the Application's user interface
+        </li>
+        <li>
+          <strong>Error Handling:</strong> Local logs are used for debugging and
+          improving the Application
+        </li>
+      </ul>
+
+      <h2>4. Data Storage and Security</h2>
+
+      <h3>4.1 Local Storage</h3>
+      <p>All data is stored locally on your device:</p>
+      <ul>
+        <li>
+          <strong>OAuth Tokens:</strong> Stored in your system's application
+          data directory
+          <ul>
+            <li>macOS: <code>~/Library/Application Support/get-gphotos-data/</code></li>
+            <li>Windows: <code>%APPDATA%\get-gphotos-data\</code></li>
+            <li>Linux: <code>~/.config/get-gphotos-data/</code></li>
+          </ul>
+        </li>
+        <li>
+          <strong>Log Files:</strong> Stored in the same application data
+          directory
+        </li>
+        <li>
+          <strong>Application Settings:</strong> Stored using your operating
+          system's standard settings storage
+        </li>
+      </ul>
+
+      <h3>4.2 Data Transmission</h3>
+      <p>
+        The Application communicates directly with Google's servers via the
+        Google Photos Library API. No data is transmitted to third-party
+        servers or to the Application's developers.
+      </p>
+
+      <h3>4.3 Security Measures</h3>
+      <ul>
+        <li>
+          OAuth tokens are stored securely using your operating system's
+          standard security mechanisms
+        </li>
+        <li>
+          All API communications use HTTPS encryption (enforced by Google's API)
+        </li>
+        <li>
+          The Application does not store your Google account password or
+          credentials file contents
+        </li>
+        <li>
+          OAuth refresh tokens are used to automatically renew access tokens
+          when they expire
+        </li>
+      </ul>
+
+      <h2>5. Data Sharing and Disclosure</h2>
+      <p>
+        <strong>The Application does not share your data with any third parties.</strong>
+      </p>
+      <ul>
+        <li>
+          No data is sent to external servers (except Google's API servers for
+          authentication and data retrieval)
+        </li>
+        <li>
+          No analytics or tracking services are used
+        </li>
+        <li>
+          No data is sold, rented, or disclosed to third parties
+        </li>
+        <li>
+          The Application is open-source software, allowing you to review the
+          code to verify these practices
+        </li>
+      </ul>
+
+      <h2>6. Your Rights (GDPR and CCPA)</h2>
+
+      <h3>6.1 Right to Access</h3>
+      <p>
+        You have the right to access all data stored by the Application. Since
+        all data is stored locally on your device, you can access it directly
+        through your file system.
+      </p>
+
+      <h3>6.2 Right to Deletion</h3>
+      <p>You can delete your data at any time by:</p>
+      <ul>
+        <li>
+          Deleting the application data directory (this removes all stored
+          tokens and logs)
+        </li>
+        <li>
+          Uninstalling the Application
+        </li>
+        <li>
+          Revoking access through your Google Account settings at
+          <a href="https://myaccount.google.com/permissions" target="_blank">myaccount.google.com/permissions</a>
+        </li>
+      </ul>
+
+      <h3>6.3 Right to Data Portability</h3>
+      <p>
+        All data stored by the Application is in standard formats (JSON) and is
+        accessible on your local device. You can copy, export, or move this data
+        as needed.
+      </p>
+
+      <h3>6.4 Right to Object and Restriction</h3>
+      <p>
+        You can stop using the Application at any time, delete stored data, and
+        revoke Google Photos API access through your Google Account settings.
+      </p>
+
+      <h3>6.5 California Privacy Rights (CCPA)</h3>
+      <p>
+        If you are a California resident, you have the right to:
+      </p>
+      <ul>
+        <li>Know what personal information is collected</li>
+        <li>Know whether your personal information is sold or disclosed</li>
+        <li>Opt-out of the sale of personal information (this Application does
+          not sell data)</li>
+        <li>Access your personal information</li>
+        <li>Request deletion of your personal information</li>
+        <li>Non-discrimination for exercising your privacy rights</li>
+      </ul>
+
+      <h2>7. Children's Privacy</h2>
+      <p>
+        The Application is not intended for use by children under the age of 13
+        (or 16 in the EU). We do not knowingly collect personal information from
+        children. If you believe we have collected information from a child,
+        please contact us immediately so we can delete the information.
+      </p>
+
+      <h2>8. Changes to This Privacy Policy</h2>
+      <p>
+        We may update this Privacy Policy from time to time. We will notify you
+        of any changes by updating the "Last Updated" date at the top of this
+        policy. You are advised to review this Privacy Policy periodically for
+        any changes.
+      </p>
+
+      <h2>9. Third-Party Services</h2>
+      <p>
+        The Application integrates with Google Photos Library API. Your use of
+        Google services is subject to Google's Privacy Policy, which can be
+        found at
+        <a href="https://policies.google.com/privacy" target="_blank">policies.google.com/privacy</a>.
+      </p>
+
+      <h2>10. Contact Information</h2>
+      <div class="contact-info">
+        <p>
+          If you have any questions about this Privacy Policy or wish to
+          exercise your privacy rights, please contact:
+        </p>
+        <p>
+          <strong>Rich Lewis</strong><br />
+          GitHub: <a href="https://github.com/RichLewis007" target="_blank">@RichLewis007</a><br />
+          Repository: <a href="https://github.com/YOUR_USERNAME/Google-Photos-Library-API" target="_blank">Google-Photos-Library-API</a>
+        </p>
+      </div>
+
+      <h2>11. Legal Basis for Processing (GDPR)</h2>
+      <p>
+        Under GDPR, our legal basis for processing your personal data is:
+      </p>
+      <ul>
+        <li>
+          <strong>Consent:</strong> You provide explicit consent when you
+          authenticate with Google and grant permissions to access Google Photos
+          data
+        </li>
+        <li>
+          <strong>Legitimate Interest:</strong> Processing is necessary for the
+          functionality of the Application as requested by you
+        </li>
+      </ul>
+
+      <h2>12. Data Retention</h2>
+      <p>
+        Data is retained on your device until you:
+      </p>
+      <ul>
+        <li>Delete the application data directory</li>
+        <li>Uninstall the Application</li>
+        <li>Revoke access through Google Account settings</li>
+      </ul>
+      <p>
+        OAuth tokens may be automatically refreshed by Google's authentication
+        system, but you can revoke access at any time through your Google
+        Account settings.
+      </p>
+
+      <h2>13. International Data Transfers</h2>
+      <p>
+        All data is stored locally on your device. When the Application
+        communicates with Google's servers, data transfers are subject to
+        Google's data transfer mechanisms and privacy policies. Google's
+        services comply with applicable data protection laws, including GDPR.
+      </p>
+
+      <a href="index.html" class="back-link">← Back to Home</a>
+    </div>
+  </body>
+</html>
