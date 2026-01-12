@@ -31,6 +31,7 @@ If you get a `403 Client Error: Forbidden` when trying to refresh data, this usu
 5. Scroll down to **Scopes**
 6. Click **Add or Remove Scopes**
 7. Search for and add: `https://www.googleapis.com/auth/photoslibrary.readonly.appcreateddata`
+   (Note: `photoslibrary.readonly` was deprecated March 31, 2025 and no longer works)
 8. Click **Update**
 9. **Re-authenticate** in the application (delete the token file or click "Re-authenticate")
 

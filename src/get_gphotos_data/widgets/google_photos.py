@@ -6,12 +6,15 @@ including media items, albums, and shared albums.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
+import webbrowser
 from pathlib import Path
 from typing import Any, cast
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QSize, Qt, QTimer, Signal
+from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QFileDialog,
     QLabel,
@@ -30,7 +33,7 @@ from ..core.paths import app_data_dir, app_executable_dir
 from ..core.ui_loader import load_ui
 from ..core.workers import WorkContext, Worker, WorkerPool, WorkRequest
 from ..photos.auth import GooglePhotosAuth
-from ..photos.client import GooglePhotosClient
+from ..photos.picker import GooglePhotosPicker
 
 # Type alias for worker result tuple
 WorkerResult = tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]
@@ -121,6 +124,28 @@ class GooglePhotosView(QWidget):
         if details_text is None:
             raise RuntimeError("detailsText not found in google_photos_view.ui")
         self.details_text = cast(QTextEdit, details_text)
+        
+        # Create image display label for photos and add it to details tab
+        self.image_label = QLabel()
+        self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.image_label.setText("No image selected")
+        self.image_label.setMinimumHeight(200)
+        self.image_label.setMaximumHeight(400)
+        self.image_label.setStyleSheet(
+            "border: 1px solid gray; background-color: #f0f0f0;"
+        )
+        # Don't use setScaledContents - we'll handle scaling manually to preserve aspect ratio
+        self.image_label.setScaledContents(False)
+        
+        # Add image label to details tab (insert before detailsText)
+        details_tab = ui_widget.findChild(QWidget, "detailsTab")
+        if details_tab:
+            details_layout = details_tab.layout()
+            if details_layout:
+                # Insert image label before the detailsText widget
+                self.image_label.setVisible(True)
+                details_layout.insertWidget(1, self.image_label)
+                self.log.info("Image label added to details tab")
 
         # Connect signals
         self.authenticate_button.clicked.connect(self.on_authenticate)
@@ -133,12 +158,14 @@ class GooglePhotosView(QWidget):
 
         # Initialize state
         self.auth: GooglePhotosAuth | None = None
-        self.client: GooglePhotosClient | None = None
+        self.picker: GooglePhotosPicker | None = None
         self.media_items: list[dict[str, Any]] = []
         self.albums: list[dict[str, Any]] = []
         self.shared_albums: list[dict[str, Any]] = []
         self.pool = WorkerPool()
         self.active_worker: Worker[WorkerResult] | None = None
+        self.poll_timer: QTimer | None = None
+        self.current_session_id: str | None = None
 
         # Disable authenticate button by default
         self.authenticate_button.setEnabled(False)
@@ -160,10 +187,12 @@ class GooglePhotosView(QWidget):
         if self.auth.is_authenticated():
             try:
                 credentials = self.auth.authenticate()
-                self.client = GooglePhotosClient(credentials, debug=self.debug_api)
+                self.picker = GooglePhotosPicker(
+                    credentials, debug=self.debug_api
+                )
                 self._update_ui_state(True)
             except Exception as e:
-                self.log.warning("Failed to initialize authenticated client: %s", e)
+                self.log.warning("Failed to initialize picker client: %s", e)
                 self._update_ui_state(False)
 
     def _update_ui_state(self, authenticated: bool) -> None:
@@ -208,7 +237,9 @@ class GooglePhotosView(QWidget):
                     # Try to authenticate (will load existing token and refresh if needed)
                     credentials = self.auth.authenticate()
                     # If we got here, authentication succeeded
-                    self.client = GooglePhotosClient(credentials, debug=self.debug_api)
+                    self.picker = GooglePhotosPicker(
+                        credentials, debug=self.debug_api
+                    )
                     self._update_ui_state(True)
                     self.log.info("Successfully authenticated with existing credentials")
                 except Exception as e:
@@ -216,7 +247,7 @@ class GooglePhotosView(QWidget):
                     self.log.warning("Failed to authenticate automatically: %s", e)
                     # Keep auth instance for manual auth
                     self.auth = GooglePhotosAuth(credentials_path)
-                    self.client = None
+                    self.picker = None
                     self._update_ui_state(False)
                     self.authenticate_button.setEnabled(True)
             else:
@@ -247,13 +278,14 @@ class GooglePhotosView(QWidget):
 
         try:
             credentials = self.auth.authenticate()
-            self.client = GooglePhotosClient(credentials, debug=self.debug_api)
+            self.picker = GooglePhotosPicker(
+                credentials, debug=self.debug_api
+            )
             self._update_ui_state(True)
             QMessageBox.information(
                 self, "Authentication", "Successfully authenticated with Google Photos!"
             )
-            # Automatically refresh data after authentication
-            self.on_refresh_data()
+            # Note: Picker API requires user to select photos, so we don't auto-refresh
         except FileNotFoundError as e:
             QMessageBox.critical(self, "Authentication Error", f"Credentials file not found:\n{e}")
         except Exception as e:
@@ -261,60 +293,48 @@ class GooglePhotosView(QWidget):
             QMessageBox.critical(self, "Authentication Error", f"Failed to authenticate:\n{e}")
 
     def on_refresh_data(self) -> None:
-        """Refresh data from Google Photos API using a background worker.
+        """Open Google Photos Picker to select photos.
 
-        Fetches a single page of data for quick testing.
+        Uses the Google Photos Picker API which allows access to all photos
+        in the user's library (not just app-created content).
         """
-        if not self.client:
+        if not self.picker:
             QMessageBox.warning(self, "Not Authenticated", "Please authenticate first.")
             return
 
-        if self.active_worker is not None:
-            QMessageBox.information(self, "Loading", "Data is already being loaded. Please wait.")
+        if self.active_worker is not None or self.current_session_id:
+            QMessageBox.information(
+                self, "Loading", "A picker session is already active. Please wait."
+            )
             return
 
-        # Store client in local variable for type narrowing in nested function
-        client = self.client
-        assert client is not None  # Type narrowing
+        # Store picker in local variable for type narrowing
+        picker = self.picker
+        assert picker is not None  # Type narrowing
 
         # Create progress dialog
         progress_dialog = QProgressDialog(
-            "Loading data from Google Photos...", "Cancel", 0, 100, self
+            "Opening Google Photos Picker...", "Cancel", 0, 100, self
         )
-        progress_dialog.setWindowTitle("Loading Google Photos Data")
+        progress_dialog.setWindowTitle("Google Photos Picker")
         progress_dialog.setWindowModality(Qt.WindowModality.WindowModal)
         progress_dialog.setMinimumDuration(0)  # Show immediately
         progress_dialog.setValue(0)
 
         # Show progress
         self.refresh_button.setEnabled(False)
-        self.refresh_button.setText("Loading...")
+        self.refresh_button.setText("Opening Picker...")
 
-        def work(ctx: WorkContext) -> WorkerResult:
-            """Background work function - runs in worker thread.
+        def work(ctx: WorkContext) -> dict[str, Any]:
+            """Background work function - creates picker session.
 
-            Fetches a single page of data from the Google Photos API.
+            Returns session data with pickerUri.
             """
-            # Fetch media items (single page)
-            ctx.progress(10, "Fetching media items...")
+            ctx.progress(50, "Creating picker session...")
             ctx.check_cancelled()
-            media_response = client.list_media_items(page_size=100)
-            media_items = media_response.get("mediaItems", [])
-
-            # Fetch albums (single page)
-            ctx.progress(50, "Fetching albums...")
-            ctx.check_cancelled()
-            albums_response = client.list_albums(page_size=50)
-            albums = albums_response.get("albums", [])
-
-            # Fetch shared albums (single page)
-            ctx.progress(90, "Fetching shared albums...")
-            ctx.check_cancelled()
-            shared_albums_response = client.list_shared_albums(page_size=50)
-            shared_albums = shared_albums_response.get("sharedAlbums", [])
-
-            ctx.progress(100, "Complete")
-            return (media_items, albums, shared_albums)
+            session = picker.create_session()
+            ctx.progress(100, "Session created")
+            return session
 
         def progress(percent: int, message: str) -> None:
             """Progress callback - runs on main thread via signal."""
@@ -325,44 +345,54 @@ class GooglePhotosView(QWidget):
             # Process events to update UI
             progress_dialog.show()
 
-        def done(result: WorkerResult) -> None:
-            """Completion callback - runs on main thread when worker finishes."""
+        def done(session_data: dict[str, Any]) -> None:
+            """Completion callback - opens picker and starts polling."""
             progress_dialog.close()
 
-            media_items, albums, shared_albums = result
+            # API returns "id" not "sessionId"
+            session_id = session_data.get("id")
+            picker_uri = session_data.get("pickerUri")
 
-            # Update data
-            self.media_items = media_items
-            self.albums = albums
-            self.shared_albums = shared_albums
+            if not session_id or not picker_uri:
+                QMessageBox.critical(
+                    self,
+                    "Error",
+                    "Failed to create picker session. Missing id or pickerUri.",
+                )
+                self.refresh_button.setEnabled(True)
+                self.refresh_button.setText("Refresh Data")
+                self.active_worker = None
+                return
 
-            # Populate tables
-            self._populate_media_items_table()
-            self._populate_albums_table()
-            self._populate_shared_albums_table()
+            self.current_session_id = session_id
 
-            # Show completion message
-            QMessageBox.information(
-                self,
-                "Data Refreshed",
-                f"Loaded {len(self.media_items)} media items, "
-                f"{len(self.albums)} albums, and {len(self.shared_albums)} shared albums.\n\n"
-                "Note: This is a single page of results. Use 'Load All' to fetch all data.",
+            # Open picker in browser
+            self.log.info("Opening picker URI in browser: %s", picker_uri)
+            webbrowser.open(picker_uri)
+
+            # Update UI
+            self.refresh_button.setText("Waiting for selection...")
+            progress_dialog.setLabelText(
+                "Please select photos in the browser window.\n"
+                "The app will automatically detect when you're done."
             )
+            progress_dialog.setValue(50)
+            progress_dialog.show()
 
-            # Reset UI
-            self.refresh_button.setEnabled(True)
-            self.refresh_button.setText("Refresh Data")
-            self.active_worker = None
-            self.log.info("Data refresh completed")
+            # Start polling for session completion
+            self._start_polling_session(session_id, progress_dialog)
 
         def cancelled() -> None:
             """Cancellation callback - runs on main thread when work is cancelled."""
             progress_dialog.close()
+            if self.current_session_id and self.picker:
+                with contextlib.suppress(Exception):
+                    self.picker.delete_session(self.current_session_id)
+                self.current_session_id = None
             self.refresh_button.setEnabled(True)
             self.refresh_button.setText("Refresh Data")
             self.active_worker = None
-            self.log.info("Data refresh cancelled")
+            self.log.info("Picker session cancelled")
 
         def error(msg: str) -> None:
             """Error callback - runs on main thread when work fails."""
@@ -373,19 +403,19 @@ class GooglePhotosView(QWidget):
                 error_msg = (
                     f"403 Forbidden Error:\n{error_msg}\n\n"
                     "This usually means:\n"
-                    "1. The Google Photos Library API is not enabled in your Google Cloud Console\n"
-                    "   → Go to APIs & Services > Library > Enable 'Google Photos Library API'\n"
+                    "1. The Google Photos Picker API is not enabled in your Google Cloud Console\n"
+                    "   → Go to APIs & Services > Library > Enable 'Google Photos Picker API'\n"
                     "2. The OAuth scope was not granted during authentication\n"
                     "   → Try re-authenticating and make sure to grant all permissions\n"
                     "3. The scope is not added to your OAuth consent screen\n"
                     "   → Add 'https://www.googleapis.com/auth/"
-                    "photoslibrary.readonly.appcreateddata' to scopes"
+                    "photospicker.mediaitems.readonly' to scopes"
                 )
             QMessageBox.critical(self, "Error", error_msg)
             self.refresh_button.setEnabled(True)
             self.refresh_button.setText("Refresh Data")
             self.active_worker = None
-            self.log.exception("Failed to refresh data")
+            self.log.exception("Failed to create picker session")
 
         # Connect cancel button to worker cancellation
         def cancel_work() -> None:
@@ -402,6 +432,168 @@ class GooglePhotosView(QWidget):
             on_cancel=cancelled,
         )
         self.active_worker = self.pool.submit(req)
+
+    def _start_polling_session(
+        self, session_id: str, progress_dialog: QProgressDialog
+    ) -> None:
+        """Start polling for session completion.
+
+        Args:
+            session_id: The session ID to poll
+            progress_dialog: Progress dialog to update
+        """
+        if not self.picker:
+            return
+
+        # Stop any existing timer
+        if self.poll_timer:
+            self.poll_timer.stop()
+
+        # Create timer to poll session status
+        self.poll_timer = QTimer(self)
+        poll_count = [0]  # Use list to allow modification in nested function
+
+        def poll() -> None:
+            """Poll session status and handle completion."""
+            if not self.picker or not self.current_session_id:
+                if self.poll_timer:
+                    self.poll_timer.stop()
+                return
+
+            try:
+                session = self.picker.get_session(session_id)
+                # Check mediaItemsSet field - when True, user has completed selection
+                media_items_set = session.get("mediaItemsSet", False)
+                status = session.get("status", "")
+
+                poll_count[0] += 1
+                progress_dialog.setValue(50 + min(poll_count[0] * 2, 45))
+                
+                # Log status for debugging
+                if poll_count[0] % 10 == 0:  # Log every 10 polls (every 20 seconds)
+                    self.log.info(
+                        "Polling session %s: mediaItemsSet=%s, status=%s",
+                        session_id[:8],
+                        media_items_set,
+                        status,
+                    )
+
+                # Session is complete when mediaItemsSet is True
+                if media_items_set or status == "SESSION_STATUS_COMPLETE":
+                    # Session completed, get selected items
+                    self.poll_timer.stop()
+                    progress_dialog.setValue(90)
+                    progress_dialog.setLabelText("Retrieving selected photos...")
+
+                    # Capture picker and session_id for nested function
+                    picker_instance = self.picker
+                    captured_session_id = session_id
+
+                    def fetch_items(ctx: WorkContext) -> list[dict[str, Any]]:
+                        """Fetch selected items in background worker."""
+                        ctx.progress(90, "Retrieving selected photos...")
+                        if not picker_instance:
+                            raise RuntimeError("Picker instance not available")
+                        media_items = picker_instance.get_all_selected_media_items(
+                            captured_session_id
+                        )
+                        # Clean up session
+                        picker_instance.delete_session(captured_session_id)
+                        ctx.progress(100, "Complete")
+                        return media_items
+
+                    def items_done(media_items: list[dict[str, Any]]) -> None:
+                        """Handle fetched items on main thread."""
+                        progress_dialog.close()
+
+                        # Update data
+                        self.media_items = media_items
+                        self.albums = []  # Picker API doesn't return albums
+                        self.shared_albums = []
+
+                        # Populate tables
+                        self._populate_media_items_table()
+                        self._populate_albums_table()
+                        self._populate_shared_albums_table()
+
+                        # Show completion message
+                        QMessageBox.information(
+                            self,
+                            "Photos Selected",
+                            f"Loaded {len(self.media_items)} selected media items.",
+                        )
+
+                        # Reset UI
+                        self.refresh_button.setEnabled(True)
+                        self.refresh_button.setText("Refresh Data")
+                        self.current_session_id = None
+                        self.active_worker = None
+                        self.log.info(
+                            "Picker session completed with %d items",
+                            len(self.media_items),
+                        )
+
+                    def items_error(msg: str) -> None:
+                        """Handle fetch error on main thread."""
+                        progress_dialog.close()
+                        QMessageBox.critical(
+                            self, "Error", f"Failed to retrieve selected photos:\n{msg}"
+                        )
+                        self.refresh_button.setEnabled(True)
+                        self.refresh_button.setText("Refresh Data")
+                        self.current_session_id = None
+                        self.active_worker = None
+
+                    # Fetch items in background worker
+                    req = WorkRequest(
+                        fn=fetch_items, on_done=items_done, on_error=items_error
+                    )
+                    self.active_worker = self.pool.submit(req)
+
+                elif status == "SESSION_STATUS_EXPIRED":
+                    self.poll_timer.stop()
+                    progress_dialog.close()
+                    QMessageBox.warning(
+                        self, "Session Expired", "The picker session expired. Please try again."
+                    )
+                    self.refresh_button.setEnabled(True)
+                    self.refresh_button.setText("Refresh Data")
+                    self.current_session_id = None
+                    self.active_worker = None
+
+                # Continue polling if still active
+                elif status == "SESSION_STATUS_ACTIVE" or not media_items_set:
+                    if poll_count[0] > 300:  # 5 minutes timeout (2 second intervals)
+                        self.poll_timer.stop()
+                        progress_dialog.close()
+                        QMessageBox.warning(
+                            self,
+                            "Timeout",
+                            "Picker session timed out. Please try again.",
+                        )
+                        if self.picker:
+                            with contextlib.suppress(Exception):
+                                self.picker.delete_session(session_id)
+                        self.refresh_button.setEnabled(True)
+                        self.refresh_button.setText("Refresh Data")
+                        self.current_session_id = None
+                        self.active_worker = None
+
+            except Exception as e:
+                self.log.exception("Error polling session status")
+                self.poll_timer.stop()
+                progress_dialog.close()
+                QMessageBox.critical(
+                    self, "Error", f"Failed to check picker status:\n{e}"
+                )
+                self.refresh_button.setEnabled(True)
+                self.refresh_button.setText("Refresh Data")
+                self.current_session_id = None
+                self.active_worker = None
+
+        # Poll every 2 seconds
+        self.poll_timer.timeout.connect(poll)
+        self.poll_timer.start(2000)  # 2 seconds
 
     def _clear_all_tables(self) -> None:
         """Clear all data tables."""
@@ -541,7 +733,7 @@ class GooglePhotosView(QWidget):
                 self._show_item_details(album_data, "Shared Album")
 
     def _show_item_details(self, data: dict[str, Any], item_type: str) -> None:
-        """Show detailed JSON view of the selected item.
+        """Show detailed JSON view of the selected item and display image if available.
 
         Args:
             data: The item data dictionary
@@ -557,3 +749,117 @@ class GooglePhotosView(QWidget):
         except Exception as e:
             self.log.error("Failed to format details: %s", e)
             self.details_text.setPlainText(f"Error displaying {item_type} details:\n{e}")
+        
+        # Display image if this is a media item with a baseUrl
+        if item_type == "Media Item":
+            media_file = data.get("mediaFile", {})
+            base_url = media_file.get("baseUrl")
+            if base_url:
+                self._load_and_display_image(base_url)
+            else:
+                self.image_label.setText("No image URL available")
+                self.image_label.setPixmap(QPixmap())
+        else:
+            self.image_label.setText("No image (not a media item)")
+            self.image_label.setPixmap(QPixmap())
+    
+    def _load_and_display_image(self, url: str) -> None:
+        """Load and display an image from a URL.
+
+        Args:
+            url: The image URL to load
+        """
+        self.log.info("Loading image from URL: %s", url)
+        self.image_label.setText("Loading image...")
+        self.image_label.setVisible(True)
+        
+        def load_image(ctx: WorkContext) -> QPixmap | None:
+            """Load image in background worker."""
+            try:
+                import requests
+                ctx.progress(50, "Fetching image...")
+                
+                # Image URLs require authentication - get token from picker
+                headers = {}
+                if (
+                    self.picker
+                    and self.picker.credentials
+                    and not self.picker.credentials.valid
+                    and self.picker.credentials.expired
+                    and self.picker.credentials.refresh_token
+                ):
+                    # Refresh token if needed
+                    self.picker.credentials.refresh(requests.Request())
+                
+                if self.picker and self.picker.credentials and self.picker.credentials.token:
+                    headers["Authorization"] = (
+                        f"Bearer {self.picker.credentials.token}"
+                    )
+                
+                response = requests.get(url, headers=headers, timeout=30)
+                response.raise_for_status()
+                ctx.progress(90, "Loading image data...")
+                pixmap = QPixmap()
+                if pixmap.loadFromData(response.content):
+                    ctx.progress(100, "Image loaded")
+                    return pixmap
+                else:
+                    self.log.error("Failed to load image data into pixmap")
+                    return None
+            except Exception:
+                self.log.exception("Failed to load image from URL: %s", url)
+                return None
+        
+        def image_loaded(pixmap: QPixmap | None) -> None:
+            """Display loaded image on main thread."""
+            if pixmap and not pixmap.isNull():
+                self.log.info(
+                    "Image loaded, pixmap: %dx%d, label: %dx%d",
+                    pixmap.width(),
+                    pixmap.height(),
+                    self.image_label.width(),
+                    self.image_label.height(),
+                )
+                # Get label size, but use a reasonable default if not yet sized
+                label_size = self.image_label.size()
+                if label_size.width() == 0 or label_size.height() == 0:
+                    # Label not sized yet, use a default size based on image aspect ratio
+                    # But limit to reasonable maximum
+                    max_width = 800
+                    max_height = 600
+                    img_width = pixmap.width()
+                    img_height = pixmap.height()
+                    if img_width > 0 and img_height > 0:
+                        aspect = img_width / img_height
+                        if aspect > 1:
+                            # Landscape
+                            label_size = QSize(max_width, int(max_width / aspect))
+                        else:
+                            # Portrait
+                            label_size = QSize(int(max_height * aspect), max_height)
+                    else:
+                        label_size = QSize(max_width, max_height)
+                
+                # Scale image to fit label while maintaining aspect ratio
+                scaled_pixmap = pixmap.scaled(
+                    label_size,
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation,
+                )
+                self.image_label.setPixmap(scaled_pixmap)
+                self.image_label.setText("")
+                # Adjust label size to match scaled pixmap to prevent stretching
+                self.image_label.setFixedSize(scaled_pixmap.size())
+            else:
+                self.image_label.setText("Failed to load image")
+                self.image_label.setPixmap(QPixmap())
+                self.image_label.setFixedSize(QSize())  # Reset fixed size
+        
+        def image_error(msg: str) -> None:
+            """Handle image load error on main thread."""
+            self.image_label.setText(f"Error loading image: {msg}")
+            self.image_label.setPixmap(QPixmap())
+        
+        # Load image in background worker
+        req = WorkRequest(fn=load_image, on_done=image_loaded, on_error=image_error)
+        self.pool.submit(req)

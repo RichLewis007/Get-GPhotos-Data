@@ -7,10 +7,13 @@ using the requests library. It handles all API endpoints and data retrieval.
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import requests
 from google.oauth2.credentials import Credentials
+
+if TYPE_CHECKING:
+    from .auth import GooglePhotosAuth
 
 # Google Photos API base URL
 API_BASE_URL = "https://photoslibrary.googleapis.com/v1"
@@ -19,16 +22,23 @@ API_BASE_URL = "https://photoslibrary.googleapis.com/v1"
 class GooglePhotosClient:
     """Client for Google Photos Library API using requests library."""
 
-    def __init__(self, credentials: Credentials, debug: bool = False) -> None:
+    def __init__(
+        self,
+        credentials: Credentials,
+        debug: bool = False,
+        auth: GooglePhotosAuth | None = None,
+    ) -> None:
         """Initialize the API client.
 
         Args:
             credentials: OAuth 2.0 credentials from GooglePhotosAuth
             debug: If True, log detailed API request/response information
+            auth: Optional GooglePhotosAuth instance for scope checking
         """
         self.log = logging.getLogger(__name__)
         self.credentials = credentials
         self.debug = debug
+        self.auth = auth
         self.session = requests.Session()
         self._update_session_auth()
 
@@ -113,15 +123,32 @@ class GooglePhotosClient:
                         error_detail = f"\nError details: {error_detail}"
                 except Exception:
                     pass
+                
+                # Check granted scopes if auth is available
+                scope_info = ""
+                if hasattr(self, 'auth') and self.auth:
+                    granted = self.auth.get_granted_scopes()
+                    if granted:
+                        scope_info = f"\nGranted scopes: {', '.join(granted)}"
+                    else:
+                        scope_info = "\nNo scopes found in credentials"
+                
                 self.log.error(
-                    "API request forbidden (403): %s %s%s\n"
+                    "API request forbidden (403): %s %s%s%s\n"
                     "Common causes:\n"
                     "1. Google Photos Library API not enabled in Google Cloud Console\n"
-                    "2. OAuth scope not granted or not in consent screen\n"
-                    "3. Insufficient permissions",
+                    "   → Go to APIs & Services > Library > Enable 'Google Photos Library API'\n"
+                    "2. OAuth scope not added to consent screen\n"
+                    "   → Go to OAuth consent screen > Add scope: "
+                    "https://www.googleapis.com/auth/photoslibrary.readonly.appcreateddata\n"
+                    "3. Scope not granted during authentication\n"
+                    "   → Delete token file and re-authenticate\n"
+                    "4. App is in testing mode and your account isn't a test user\n"
+                    "   → Add your email to Test users in OAuth consent screen",
                     method,
                     url,
                     error_detail,
+                    scope_info,
                 )
             else:
                 self.log.error("API request failed: %s %s - %s", method, url, e)

@@ -18,11 +18,16 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from ..core.paths import app_data_dir
 
 # Google Photos API scopes
-# Note: photoslibrary.readonly was deprecated March 31, 2025, but still works
-# and is needed to access ALL photos (not just app-created data)
+# Note: photoslibrary.readonly was deprecated March 31, 2025 and now returns 403 errors
+# We need both:
+# 1. photospicker.mediaitems.readonly - to create picker sessions and select photos
+# 2. photoslibrary.readonly.appcreateddata - to retrieve selected items via Library API
+# The Library API endpoint (mediaItems.list with sessionId) requires the Library scope
+# even when used with Picker session IDs
 # See local/scope-change-notes.md for details
 SCOPES = [
-    "https://www.googleapis.com/auth/photoslibrary.readonly",
+    "https://www.googleapis.com/auth/photospicker.mediaitems.readonly",
+    "https://www.googleapis.com/auth/photoslibrary.readonly.appcreateddata",
 ]
 
 # Token file name (stored in app data directory)
@@ -143,6 +148,34 @@ class GooglePhotosAuth:
                     return False
             return False
         return True
+
+    def get_granted_scopes(self) -> list[str]:
+        """Get the scopes that were actually granted during authentication.
+        
+        Returns:
+            List of granted scope strings, or empty list if not authenticated
+        """
+        if not self.credentials:
+            return []
+        return list(self.credentials.scopes) if self.credentials.scopes else []
+
+    def check_scope_mismatch(self) -> tuple[bool, str]:
+        """Check if granted scopes match required scopes.
+        
+        Returns:
+            Tuple of (is_match, message) where is_match is True if scopes match
+        """
+        if not self.credentials or not self.credentials.scopes:
+            return False, "No credentials or scopes available"
+        
+        granted = set(self.credentials.scopes)
+        required = set(SCOPES)
+        
+        missing = required - granted
+        if missing:
+            return False, f"Missing required scopes: {', '.join(missing)}"
+        
+        return True, f"All required scopes granted: {', '.join(granted)}"
 
     def revoke(self) -> None:
         """Revoke credentials and delete token file."""
