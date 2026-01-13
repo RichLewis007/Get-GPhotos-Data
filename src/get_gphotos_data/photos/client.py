@@ -113,15 +113,25 @@ class GooglePhotosClient:
                         error_detail = f"\nError details: {error_detail}"
                 except Exception:
                     pass
+                
+                # Check what scopes were actually granted
+                granted_scopes = []
+                if self.credentials and hasattr(self.credentials, "scopes"):
+                    granted_scopes = self.credentials.scopes or []
+                
                 self.log.error(
                     "API request forbidden (403): %s %s%s\n"
+                    "Granted scopes: %s\n"
                     "Common causes:\n"
                     "1. Google Photos Library API not enabled in Google Cloud Console\n"
                     "2. OAuth scope not granted or not in consent screen\n"
-                    "3. Insufficient permissions",
+                    "3. The photoslibrary.readonly scope was deprecated March 31, 2025\n"
+                    "   and may be fully disabled for your account\n"
+                    "4. Insufficient permissions",
                     method,
                     url,
                     error_detail,
+                    granted_scopes,
                 )
             else:
                 self.log.error("API request failed: %s %s - %s", method, url, e)

@@ -1,5 +1,17 @@
 # get-gphotos-data
 
+> **⚠️ DEPRECATED - NO LONGER FUNCTIONAL ⚠️**
+> 
+> **Google has ended support for the Google Photos Library API features which allow users to write programs to read or list their existing photos and videos.**
+> 
+> As of March 31, 2025, Google deprecated the `photoslibrary.readonly` scope that provided access to all photos in a user's library. The Library API now only supports accessing photos and videos that were uploaded by your application (`photoslibrary.readonly.appcreateddata`), which means this program cannot function as intended.
+> 
+> **This project is deprecated and no longer maintained.**
+> 
+> For accessing photos from Google Photos, you would need to use the [Google Photos Picker API](https://developers.google.com/photos/picker), which requires users to manually select photos through a web interface rather than programmatically listing all photos.
+
+---
+
 A Python desktop GUI application to access and view Google Photos data via their Library API.
 
 **Author:** Rich Lewis - GitHub: [@RichLewis007](https://github.com/RichLewis007)
